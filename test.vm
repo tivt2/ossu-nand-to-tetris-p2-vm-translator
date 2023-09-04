@@ -1,0 +1,64 @@
+push local 10
+pop local 10
+add
+
+// @LCL
+// D=M
+// @10
+// A=D+A
+// D=M
+// @SP
+// A=M
+// M=D
+// @SP
+// M=M+1
+
+// @LCL
+// D=M // 1000
+// @10
+// D=D+A // 1010
+// @SP
+// AM=M-1 // A=SP D=addr M=SP
+// D=D+M  // A=SP D=addr+v M=v
+// A=D-M  // A=addr D=addr+v M=v
+// M=D-A  // A=addr D=addr+v M=target
+
+push static 10
+
+// @26
+// D=M
+// @SP
+// A=M
+// M=D
+// @SP
+// M=M+1
+
+pop static 10
+
+// AM=M-1
+// D=M
+// @26
+// M=D
+
+pop local 0
+
+// @LCL
+// AD=M
+// 
+
+pop pointer 0
+
+// AM=M-1
+// D=M
+// @3
+// M=D
+
+push pointer 1
+
+// @4
+// D=M
+// @SP
+// A=M
+// M=D
+// @SP
+// M=M+1
