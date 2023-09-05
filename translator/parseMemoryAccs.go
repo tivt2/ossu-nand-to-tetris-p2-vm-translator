@@ -66,7 +66,6 @@ func staticTempPointerCommand(commands []string) string {
 		} else if op2 == "1" {
 			offset = "4"
 		}
-		log.Fatalf("%v <- is not a valid pointer 'i'")
 	} else if op1 == "static" {
 		offset = offsetString(commands[2], 16)
 	} else {
