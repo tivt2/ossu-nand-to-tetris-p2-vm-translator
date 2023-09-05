@@ -10,7 +10,7 @@ import (
 
 func Translate(path string) {
 	if isVMfile(path) {
-		translateFile(path)
+		translateFile(path, 100)
 	}
 
 	info, err := os.Stat(path)
@@ -22,7 +22,7 @@ func Translate(path string) {
 		checkErr(err2)
 		for _, file := range files {
 			if isVMfile(file) {
-				go translateFile(filepath.Join(path, file))
+				go translateFile(filepath.Join(path, file), 40)
 			}
 		}
 	}
@@ -33,11 +33,11 @@ func isVMfile(path string) bool {
 	return length > 3 && path[length-3:] == ".vm"
 }
 
-func translateFile(filePath string) {
-	lineIn := make(chan string, 40)
+func translateFile(filePath string, bufferSize int) {
+	lineIn := make(chan string, bufferSize)
 	go readFile(filePath, lineIn)
 
-	lineOut := make(chan string, 40)
+	lineOut := make(chan string, bufferSize)
 	go parse(lineIn, lineOut)
 
 	writeFile(filePath, lineOut)
