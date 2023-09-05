@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -10,9 +11,12 @@ import (
 
 func main() {
 	start := time.Now()
-	filePath := os.Args[1]
+	if len(os.Args) < 2 {
+		log.Fatalf("Usage: VMtranslator <path_to_folder_or_file.vm>")
+	}
+	arg1 := os.Args[1]
 
-	translator.Translate(filePath)
+	translator.Translate(arg1)
 
-	fmt.Printf("Compilation time: %s\n", time.Since(start))
+	fmt.Printf("Compilation time: %v\n", time.Since(start))
 }

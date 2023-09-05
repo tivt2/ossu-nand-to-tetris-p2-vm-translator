@@ -1,19 +1,75 @@
 package translator
 
 import (
-	"github.com/tivt2/vm-translator/fio"
-	"github.com/tivt2/vm-translator/parser"
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 )
 
-func Translate(filePath string) {
-	reader := fio.NewReader(filePath)
-	go reader.Read()
+func Translate(path string) {
+	if isVMfile(path) {
+		translateFile(path)
+	}
 
-	parser := parser.New(reader.ReadChan)
-	go parser.Parse()
+	info, err := os.Stat(path)
+	checkErr(err)
+	if info.IsDir() {
+		folder, err := os.Open(path)
+		checkErr(err)
+		files, err2 := folder.Readdirnames(0)
+		checkErr(err2)
+		for _, file := range files {
+			if isVMfile(file) {
+				go translateFile(filepath.Join(path, file))
+			}
+		}
+	}
+}
 
-	writer := fio.NewWriter(filePath)
-	writer.Wg.Add(1)
-	go writer.Write(parser.WriteChan)
-	writer.Wg.Wait()
+func isVMfile(path string) bool {
+	length := len(path)
+	return length > 3 && path[length-3:] == ".vm"
+}
+
+func translateFile(filePath string) {
+	lineIn := make(chan string, 40)
+	go readFile(filePath, lineIn)
+
+	lineOut := make(chan string, 40)
+	go parse(lineIn, lineOut)
+
+	writeFile(filePath, lineOut)
+}
+
+func readFile(filePath string, lineIn chan string) {
+
+	file, err := os.Open(filePath)
+	checkErr(err)
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		lineIn <- scanner.Text()
+	}
+	close(lineIn)
+}
+
+func writeFile(filePath string, lineOut chan string) {
+	OutputFilePath := fmt.Sprintf("%v.asm", filePath[:len(filePath)-3])
+	file, err := os.Create(OutputFilePath)
+	checkErr(err)
+	defer file.Close()
+
+	for parsedText := range lineOut {
+		file.Write([]byte(parsedText + "\n"))
+	}
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }
