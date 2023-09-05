@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func parse(lineIn chan string, lineOut chan string) {
+func parse(lineIn <-chan string, lineOut chan<- string) {
 	for line := range lineIn {
 		cleanLine(&line)
 		if line == "" {

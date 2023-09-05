@@ -43,7 +43,7 @@ func translateFile(filePath string) {
 	writeFile(filePath, lineOut)
 }
 
-func readFile(filePath string, lineIn chan string) {
+func readFile(filePath string, lineIn chan<- string) {
 
 	file, err := os.Open(filePath)
 	checkErr(err)
@@ -57,7 +57,7 @@ func readFile(filePath string, lineIn chan string) {
 	close(lineIn)
 }
 
-func writeFile(filePath string, lineOut chan string) {
+func writeFile(filePath string, lineOut <-chan string) {
 	OutputFilePath := fmt.Sprintf("%v.asm", filePath[:len(filePath)-3])
 	file, err := os.Create(OutputFilePath)
 	checkErr(err)
