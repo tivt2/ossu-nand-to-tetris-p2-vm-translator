@@ -7,16 +7,15 @@ import (
 	"strings"
 )
 
-func parse(lineIn <-chan string, lineOut chan<- string) {
-	for line := range lineIn {
+func parse(fileName string, inputChan <-chan string, outputMap *map[string]string) {
+	for line := range inputChan {
 		cleanLine(&line)
 		if line == "" {
 			continue
 		}
-		parsedLine := parseLine(line)
-		lineOut <- parsedLine
+		parsedLine := parseLine(line, fileName)
+		(*outputMap)[fileName] += parsedLine + "\n"
 	}
-	close(lineOut)
 }
 
 func cleanLine(line *string) {
@@ -57,15 +56,16 @@ var (
 	}
 )
 
-func parseLine(line string) string {
+func parseLine(line string, fileName string) string {
 	commands := strings.Split(line, " ")
 	out := ""
 
+	fmt.Println("parsing:", commands)
 	if _, ok := arithLogical[commands[0]]; ok {
-		out = parseMemoryAccs(commands)
+		out = parseArithLogical(commands)
 
 	} else if _, ok := memoryAccs[commands[0]]; ok {
-		out = parseArithLogical(commands)
+		out = parseMemoryAccs(commands, fileName)
 
 	} else if _, ok := branching[commands[0]]; ok {
 		out = parseBranching(commands)
@@ -77,5 +77,5 @@ func parseLine(line string) string {
 		log.Fatalf("Error while parsing line:\n%v", line)
 	}
 
-	return fmt.Sprintf("// %s\n%s\n", line, out)
+	return fmt.Sprintf("// %s\n%s", line, out)
 }
