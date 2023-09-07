@@ -6,45 +6,70 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 )
 
 func Translate(path string) {
-	if isVMfile(path) {
-		translateFile(path, 100)
+	outputMap := map[string]string{}
+	wg := sync.WaitGroup{}
+
+	if filepath.Ext(path) == ".vm" {
+		fileName := strings.ToLower(filepath.Base(path))
+		outputMap[fileName] = ""
+
+		translateFile(path, fileName, &outputMap, &wg)
+
+		outputPath := path[:len(path)-2] + "asm"
+		wg.Wait()
+		writeFile(outputPath, &outputMap, false)
+		return
 	}
 
-	info, err := os.Stat(path)
+	pathInfo, err := os.Stat(path)
 	checkErr(err)
-	if info.IsDir() {
+	if pathInfo.IsDir() {
 		folder, err := os.Open(path)
 		checkErr(err)
 		files, err2 := folder.Readdirnames(0)
 		checkErr(err2)
+
 		for _, file := range files {
-			if isVMfile(file) {
-				go translateFile(filepath.Join(path, file), 40)
+			if filepath.Ext(file) == ".vm" {
+				fileName := strings.ToLower(file[:len(file)-3])
+				outputMap[fileName] = ""
+				filePath := filepath.Join(path, file)
+
+				wg.Add(1)
+				go func() {
+					translateFile(filePath, fileName, &outputMap, &wg)
+					wg.Done()
+				}()
 			}
 		}
+
+		outputPath := filepath.Join(path, filepath.Base(path)+".asm")
+		wg.Wait()
+		writeFile(outputPath, &outputMap, true)
 	}
 }
 
-func isVMfile(path string) bool {
-	length := len(path)
-	return length > 3 && path[length-3:] == ".vm"
+func translateFile(filePath string, fileName string, outputMap *map[string]string, wg *sync.WaitGroup) {
+	inputChan := make(chan string, 40)
+
+	wg.Add(2)
+	go func() {
+		readFile(filePath, inputChan)
+		wg.Done()
+	}()
+
+	go func() {
+		parse(fileName, inputChan, outputMap)
+		wg.Done()
+	}()
 }
 
-func translateFile(filePath string, bufferSize int) {
-	lineIn := make(chan string, bufferSize)
-	go readFile(filePath, lineIn)
-
-	lineOut := make(chan string, bufferSize)
-	go parse(lineIn, lineOut)
-
-	writeFile(filePath, lineOut)
-}
-
-func readFile(filePath string, lineIn chan<- string) {
-
+func readFile(filePath string, inputChan chan<- string) {
 	file, err := os.Open(filePath)
 	checkErr(err)
 	defer file.Close()
@@ -52,19 +77,24 @@ func readFile(filePath string, lineIn chan<- string) {
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
-		lineIn <- scanner.Text()
+		inputChan <- scanner.Text()
 	}
-	close(lineIn)
+	close(inputChan)
 }
 
-func writeFile(filePath string, lineOut <-chan string) {
-	OutputFilePath := fmt.Sprintf("%v.asm", filePath[:len(filePath)-3])
-	file, err := os.Create(OutputFilePath)
+func writeFile(outputPath string, outputMap *map[string]string, bootstrap bool) {
+	fmt.Println("\nCreating file ->", outputPath, "<-")
+	file, err := os.Create(outputPath)
 	checkErr(err)
 	defer file.Close()
 
-	for parsedText := range lineOut {
-		file.Write([]byte(parsedText + "\n"))
+	if bootstrap {
+		bootstrap := "// BOOTSTRAP\n@256\nD=A\n@SP\nM=D\n" + call([]string{"call", "sys.init", "0"}) + "\n"
+		file.WriteString(bootstrap)
+	}
+
+	for _, text := range *outputMap {
+		file.WriteString(text)
 	}
 }
 
