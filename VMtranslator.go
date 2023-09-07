@@ -16,7 +16,9 @@ func main() {
 	}
 	arg1 := os.Args[1]
 
+	fmt.Println("--------TRANSLATING--------")
 	translator.Translate(arg1)
 
+	fmt.Println("\n------------END------------")
 	fmt.Printf("Compilation time: %v\n", time.Since(start))
 }

@@ -110,3 +110,26 @@ call function 2
 // @FUNCTION
 // 0;JMP
 // @RETURN ADDRS
+
+
+
+// push constant 10 <- ARG
+// push constant 5
+// call mult 2 <- return addrs
+// add
+// (LOOP)
+// @LOOP
+// 0;JMP
+
+
+
+
+
+
+// function mult 2
+// push contant 0
+// pop local 0
+// push constant 1
+// pop local 1
+
+

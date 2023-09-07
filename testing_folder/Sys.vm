@@ -1,0 +1,6 @@
+function Sys.init 0
+push constant 100
+pop local 0
+call Class.func 0
+label END
+goto END
