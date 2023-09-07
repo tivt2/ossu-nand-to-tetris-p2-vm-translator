@@ -21,7 +21,7 @@ var (
 	}
 )
 
-func parseMemoryAccs(commands []string) string {
+func parseMemoryAccs(commands []string, fileName string) string {
 	if len(commands) < 3 {
 		log.Fatalf("Bad operation call:\n%s\n", strings.Join(commands, " "))
 	}
@@ -29,7 +29,7 @@ func parseMemoryAccs(commands []string) string {
 	cmd1 := commands[1]
 	switch cmd1 {
 	case "pointer", "static", "temp":
-		return staticTempPointerCommand(commands)
+		return staticTempPointerCommand(commands, fileName)
 	}
 
 	cmd2 := commands[2]
@@ -56,19 +56,20 @@ func segOffset(command string, memoryIdx string) string {
 	return out
 }
 
-func staticTempPointerCommand(commands []string) string {
+func staticTempPointerCommand(commands []string, fileName string) string {
 	var offset string
 	op1 := commands[1]
-	if op1 == "pointer" {
+	switch op1 {
+	case "pointer": // Maybe the offset = "3" or "4" should be offset = "THIS" or "THAT"
 		op2 := commands[2]
 		if op2 == "0" {
 			offset = "3"
 		} else if op2 == "1" {
 			offset = "4"
 		}
-	} else if op1 == "static" {
-		offset = offsetString(commands[2], 16)
-	} else {
+	case "static":
+		offset = fmt.Sprintf("%s.%v", fileName, commands[2])
+	case "temp":
 		offset = offsetString(commands[2], 5)
 	}
 
@@ -85,6 +86,6 @@ func offsetString(idx string, offset int) string {
 	if err != nil {
 		log.Fatalf("%v <- is not a valid 'i'", idx)
 	}
-	out := fmt.Sprintf("%v", valInt+offset)
+	out := fmt.Sprint(valInt + offset)
 	return out
 }
